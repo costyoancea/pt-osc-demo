@@ -1,0 +1,53 @@
+version: '3'
+services:
+
+  db_master:
+    image: jamiejackson/mariadb-replication:10.2
+    container_name: db_master
+    ports:
+      - "3307:3306"
+    restart: unless-stopped
+    environment:
+      - MYSQL_ROOT_PASSWORD=${MYSQL_ROOT_PASSWORD}
+
+  db_slave1:
+    image: jamiejackson/mariadb-replication:10.2
+    container_name: db_slave1
+    depends_on:
+      - "db_master"
+    ports: 
+     - "3308:3306"
+    links:
+      - db_master:master
+    restart: unless-stopped
+    environment:
+      - MASTER_HOST=master
+      - MASTER_PORT=3306
+      - MYSQL_ROOT_PASSWORD=${MYSQL_ROOT_PASSWORD}
+
+  db_slave2:
+    image: jamiejackson/mariadb-replication:10.2
+    container_name: db_slave2
+    depends_on:
+      - "db_master"
+    ports: 
+     - "3309:3306"
+    links:
+      - db_master:master
+    restart: unless-stopped
+    environment:
+      - MASTER_HOST=master
+      - MASTER_PORT=3306
+      - MYSQL_ROOT_PASSWORD=${MYSQL_ROOT_PASSWORD}
+
+  toolkit:
+    image: perconalab/percona-toolkit:3.2.0
+#    image: perconalab/percona-toolkit
+    container_name: toolkit
+    depends_on:
+      - "db_master"
+      - "db_slave1"
+    links:
+      - db_master:master
+      - db_slave1:slave1
+    tty: true
